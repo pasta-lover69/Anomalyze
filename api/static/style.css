@@ -572,9 +572,7 @@ body {
     .results-section {
         padding: 1.5rem;
     }
-    .nav-links {
-        display: none;
-    }
+  
 }
 
 @media (max-width: 576px) {
