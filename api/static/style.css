@@ -572,6 +572,9 @@ body {
     .results-section {
         padding: 1.5rem;
     }
+    .nav-links a{
+        size: 2px;
+    }
   
 }
 
