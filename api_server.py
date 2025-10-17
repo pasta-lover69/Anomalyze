@@ -1,6 +1,5 @@
 """
 Anomalyze API Server for Render Deployment
-Hosts ML models and provides prediction API endpoints
 """
 
 from __future__ import annotations

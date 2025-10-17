@@ -1,6 +1,5 @@
 """
 Anomalyze Automatic Retraining Script
-Retrains the model with original training data + uploaded logs
 """
 
 from __future__ import annotations

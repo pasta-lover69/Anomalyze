@@ -1,12 +1,5 @@
 """
-Anomalyze Fast Model Training Script - OPTIMIZED
-Improved for BETTER QUALITY with smart optimizations
-
-Features:
-- More models with optimal cluster counts for higher silhouette scores
-- Feature selection to reduce noise
-- Better initialization and convergence
-- Refined threshold optimization for higher accuracy
+Anomalyze Fast Model Training Script
 """
 
 from __future__ import annotations

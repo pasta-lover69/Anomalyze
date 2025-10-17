@@ -1,7 +1,5 @@
 """
 Anomalyze Threshold Optimization Script
-Optimizes detection threshold for maximum accuracy
-
 """
 
 from __future__ import annotations  # Python 3.14 forward compatibility
