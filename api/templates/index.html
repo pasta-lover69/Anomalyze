@@ -71,7 +71,7 @@
     </nav>
 
     <!-- History Modal -->
-    <div id="historyModal" class="modal" style="display: none;">
+    <div id="historyModal" class="modal" style="display: none">
       <div class="modal-content-wide">
         <div class="modal-header">
           <h2 class="modal-title">📊 Analysis History</h2>
@@ -89,7 +89,9 @@
             </div>
           </div>
           <div class="modal-footer">
-            <button class="btn-secondary" onclick="clearHistory()">Clear All History</button>
+            <button class="btn-secondary" onclick="clearHistory()">
+              Clear All History
+            </button>
             <button class="btn-primary" id="closeHistoryBtn2">Close</button>
           </div>
         </div>
@@ -172,8 +174,37 @@
       {% endif %} {% if accuracy is not none %}
       <div class="results-section mt-5">
         <div class="results-summary">
-          {% set accuracy_color = 'green' if accuracy >= 85 else ('yellow' if
-          accuracy >= 70 else 'red') %}
+          {% if metrics and metrics.get('avg_silhouette_score') %} {% set
+          silhouette_score = metrics.get('avg_silhouette_score') %} {% set
+          silhouette_color = 'green' if silhouette_score >= 50 else ('yellow' if
+          silhouette_score >= 30 else 'red') %}
+          <div class="summary-card {{ silhouette_color }}">
+            <div class="card-icon">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path
+                  d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"
+                ></path>
+                <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                <line x1="12" y1="22.08" x2="12" y2="12"></line>
+              </svg>
+            </div>
+            <div class="card-content">
+              <span class="card-title">Cluster Quality</span>
+              <span class="card-value" data-target="{{ silhouette_score }}"
+                >0.00%</span
+              >
+            </div>
+          </div>
+          {% endif %} {% set accuracy_color = 'green' if accuracy >= 85 else
+          ('yellow' if accuracy >= 70 else 'red') %}
           <div class="summary-card {{ accuracy_color }}">
             <div class="card-icon">
               <svg
@@ -314,9 +345,22 @@
 
         <div class="data-card mt-4">
           <h2 class="card-header-title">Detection Details</h2>
-          {% if metrics and metrics.anomalies_detected and metrics.anomalies_displayed and metrics.anomalies_detected > metrics.anomalies_displayed %}
-          <div class="info-banner" style="background: rgba(255, 179, 66, 0.1); border-left: 4px solid #ffb342; padding: 1rem; margin-bottom: 1rem; border-radius: 8px;">
-            <strong>ℹ️ Note:</strong> Showing top {{ metrics.anomalies_displayed }} most severe anomalies out of {{ metrics.anomalies_detected }} total detected (sorted by severity).
+          {% if metrics and metrics.anomalies_detected and
+          metrics.anomalies_displayed and metrics.anomalies_detected >
+          metrics.anomalies_displayed %}
+          <div
+            class="info-banner"
+            style="
+              background: rgba(255, 179, 66, 0.1);
+              border-left: 4px solid #ffb342;
+              padding: 1rem;
+              margin-bottom: 1rem;
+              border-radius: 8px;
+            "
+          >
+            <strong>ℹ️ Note:</strong> Showing top {{ metrics.anomalies_displayed
+            }} most severe anomalies out of {{ metrics.anomalies_detected }}
+            total detected (sorted by severity).
           </div>
           {% endif %}
           <div class="table-responsive">
@@ -477,7 +521,9 @@
           <div class="spinner-ring"></div>
         </div>
         <h3 class="loading-title">Analyzing Network Data</h3>
-        <p class="loading-text">Processing <span id="loadingFileName"></span>...</p>
+        <p class="loading-text">
+          Processing <span id="loadingFileName"></span>...
+        </p>
         <div class="loading-stats">
           <div class="stat-item">
             <div class="stat-icon">🔍</div>
@@ -509,25 +555,26 @@
               totalSamples: data.totalSamples,
               anomaliesDetected: data.anomaliesDetected,
               accuracy: data.accuracy,
+              silhouetteScore: data.silhouetteScore,
               processingTime: data.processingTime
           };
-          
+
           history.unshift(historyItem);
-          
+
           // Keep only last 10 items
           if (history.length > 10) {
               history.splice(10);
           }
-          
+
           sessionStorage.setItem('analysisHistory', JSON.stringify(history));
           updateHistoryBadge();
       }
-      
+
       function getHistory() {
           const stored = sessionStorage.getItem('analysisHistory');
           return stored ? JSON.parse(stored) : [];
       }
-      
+
       function updateHistoryBadge() {
           const history = getHistory();
           const badge = document.getElementById('historyCount');
@@ -536,12 +583,12 @@
               badge.style.display = history.length > 0 ? 'inline-block' : 'none';
           }
       }
-      
+
       function showHistory() {
           const history = getHistory();
           const historyModal = document.getElementById('historyModal');
           const historyList = document.getElementById('historyList');
-          
+
           if (history.length === 0) {
               historyList.innerHTML = `
                   <div class="empty-history">
@@ -569,6 +616,12 @@
                               <span class="stat-label">Anomalies:</span>
                               <span class="stat-value anomaly-count">${item.anomaliesDetected?.toLocaleString() || 'N/A'}</span>
                           </div>
+                          ${item.silhouetteScore ? `
+                          <div class="history-stat">
+                              <span class="stat-label">Cluster Quality:</span>
+                              <span class="stat-value">${item.silhouetteScore.toFixed(2)}%</span>
+                          </div>
+                          ` : ''}
                           ${item.accuracy ? `
                           <div class="history-stat">
                               <span class="stat-label">Accuracy:</span>
@@ -583,10 +636,10 @@
                   </div>
               `).join('');
           }
-          
+
           historyModal.style.display = 'flex';
       }
-      
+
       function clearHistory() {
           if (confirm('Are you sure you want to clear all history?')) {
               sessionStorage.removeItem('analysisHistory');
@@ -594,19 +647,19 @@
               showHistory();
           }
       }
-      
+
       function formatTimestamp(isoString) {
           const date = new Date(isoString);
           const now = new Date();
           const diffMs = now - date;
           const diffMins = Math.floor(diffMs / 60000);
-          
+
           if (diffMins < 1) return 'Just now';
           if (diffMins < 60) return `${diffMins} min${diffMins > 1 ? 's' : ''} ago`;
-          
+
           const diffHours = Math.floor(diffMins / 60);
           if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
-          
+
           return date.toLocaleString();
       }
 
@@ -648,7 +701,7 @@
                   if (fileInput.files.length > 0) {
                       event.preventDefault();
                       modal.style.display = 'flex';
-                      
+
                       // Set the file name in loading overlay
                       const fileName = fileInput.files[0].name;
                       document.getElementById('loadingFileName').textContent = fileName;
@@ -664,7 +717,7 @@
                       // Hide modal and show loading overlay
                       modal.style.display = 'none';
                       document.getElementById('loadingOverlay').style.display = 'flex';
-                      
+
                       // Submit the form
                       form.submit();
                   }
@@ -689,19 +742,19 @@
           const historyModal = document.getElementById('historyModal');
           const closeHistoryBtn = document.getElementById('closeHistoryBtn');
           const closeHistoryBtn2 = document.getElementById('closeHistoryBtn2');
-          
+
           if (closeHistoryBtn) {
               closeHistoryBtn.addEventListener('click', function() {
                   historyModal.style.display = 'none';
               });
           }
-          
+
           if (closeHistoryBtn2) {
               closeHistoryBtn2.addEventListener('click', function() {
                   historyModal.style.display = 'none';
               });
           }
-          
+
           if (historyModal) {
               historyModal.addEventListener('click', function(event) {
                   if (event.target === historyModal) {
@@ -724,6 +777,7 @@
               totalSamples: {{ metrics.get('total_samples', 0) }},
               anomaliesDetected: {{ metrics.get('anomalies_detected', 0) }},
               accuracy: {{ metrics.get('accuracy', 0) }},
+              silhouetteScore: {{ metrics.get('avg_silhouette_score', 0) }},
               processingTime: {{ metrics.get('processing_time', 0) }}
           });
 
@@ -802,28 +856,28 @@
           // Use requestAnimationFrame to defer chart rendering and show page faster
           requestAnimationFrame(() => {
               const anomalyChartCtx = document.getElementById('anomalyChart').getContext('2d');
-              new Chart(anomalyChartCtx, { 
-                  type: 'bar', 
-                  data: { 
-                      labels: resultsData.slice(0, 25).map((_, i) => `Conn #${i + 1}`), 
-                      datasets: [{ 
-                          label: 'Source Bytes', 
-                          data: resultsData.slice(0, 25).map(d => d.srcBytes), 
-                          backgroundColor: 'rgba(76, 250, 239, 0.6)', 
-                          borderColor: 'rgba(76, 250, 239, 1)', 
-                          borderWidth: 1, 
-                          borderRadius: 4 
-                      }] 
-                  }, 
-                  options: { 
-                      maintainAspectRatio: false, 
+              new Chart(anomalyChartCtx, {
+                  type: 'bar',
+                  data: {
+                      labels: resultsData.slice(0, 25).map((_, i) => `Conn #${i + 1}`),
+                      datasets: [{
+                          label: 'Source Bytes',
+                          data: resultsData.slice(0, 25).map(d => d.srcBytes),
+                          backgroundColor: 'rgba(76, 250, 239, 0.6)',
+                          borderColor: 'rgba(76, 250, 239, 1)',
+                          borderWidth: 1,
+                          borderRadius: 4
+                      }]
+                  },
+                  options: {
+                      maintainAspectRatio: false,
                       animation: { duration: 500 }, // Faster chart animation
-                      scales: { 
-                          y: { beginAtZero: true, ticks: { color: '#c1c1d1' }, grid: { color: 'rgba(63, 60, 122, 0.5)' }}, 
+                      scales: {
+                          y: { beginAtZero: true, ticks: { color: '#c1c1d1' }, grid: { color: 'rgba(63, 60, 122, 0.5)' }},
                           x: { ticks: { color: '#c1c1d1' }, grid: { display: false }}
-                      }, 
-                      plugins: { legend: { display: false } } 
-                  } 
+                      },
+                      plugins: { legend: { display: false } }
+                  }
               });
           });
 
@@ -833,31 +887,31 @@
                   const protocolChartCtx = document.getElementById('protocolChart').getContext('2d');
                   const colorPalette = ['#4cfaef', '#2af598', '#ffb342', '#f95a9b', '#68d3fe'];
                   new Chart(protocolChartCtx, {
-                      type: 'doughnut', 
-                      data: { 
-                          labels: Object.keys(protocolCounts), 
-                          datasets: [{ 
-                              data: Object.values(protocolCounts), 
-                              backgroundColor: colorPalette, 
-                              borderColor: 'rgba(24, 21, 60, 0.9)', 
-                              borderWidth: 4, 
-                              hoverOffset: 15 
-                          }] 
+                      type: 'doughnut',
+                      data: {
+                          labels: Object.keys(protocolCounts),
+                          datasets: [{
+                              data: Object.values(protocolCounts),
+                              backgroundColor: colorPalette,
+                              borderColor: 'rgba(24, 21, 60, 0.9)',
+                              borderWidth: 4,
+                              hoverOffset: 15
+                          }]
                       },
-                      options: { 
-                          maintainAspectRatio: false, 
+                      options: {
+                          maintainAspectRatio: false,
                           animation: { duration: 500 }, // Faster chart animation
-                          cutout: '70%', 
-                          plugins: { 
-                              legend: { 
-                                  position: 'bottom', 
-                                  labels: { color: '#c1c1d1', boxWidth: 15, padding: 20, font: { size: 14 } } 
-                              }, 
-                              tooltip: { 
-                                  bodyFont: { size: 14 }, 
-                                  titleFont: { size: 16 } 
-                              } 
-                          } 
+                          cutout: '70%',
+                          plugins: {
+                              legend: {
+                                  position: 'bottom',
+                                  labels: { color: '#c1c1d1', boxWidth: 15, padding: 20, font: { size: 14 } }
+                              },
+                              tooltip: {
+                                  bodyFont: { size: 14 },
+                                  titleFont: { size: 16 }
+                              }
+                          }
                       }
                   });
               }, 100); // Slight delay to prioritize first chart

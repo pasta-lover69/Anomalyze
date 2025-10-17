@@ -33,6 +33,7 @@ scaler = None
 data_columns = None
 optimal_threshold = None
 model_scores = None
+silhouette_scores = None
 upload_counter = 0  # Track number of uploads since last retrain
 RETRAIN_THRESHOLD = 10  # Retrain after N uploads
 
@@ -42,6 +43,7 @@ SCALER_PATH = os.path.join(MODELS_FOLDER, 'scaler.joblib')
 COLUMNS_PATH = os.path.join(MODELS_FOLDER, 'data_columns.joblib')
 THRESHOLD_PATH = os.path.join(MODELS_FOLDER, 'optimal_threshold.joblib')
 MODEL_SCORES_PATH = os.path.join(MODELS_FOLDER, 'model_scores.joblib')
+SILHOUETTE_SCORES_PATH = os.path.join(MODELS_FOLDER, 'silhouette_scores.joblib')
 UPLOAD_COUNTER_PATH = os.path.join(MODELS_FOLDER, 'upload_counter.txt')
 
 
@@ -188,7 +190,7 @@ def trigger_retraining():
 
 def load_model() -> bool:
     """Loads the ensemble models and threshold."""
-    global ensemble_models, scaler, data_columns, optimal_threshold, model_scores
+    global ensemble_models, scaler, data_columns, optimal_threshold, model_scores, silhouette_scores
     
     try:
         if not os.path.exists(MODEL_PATH):
@@ -208,6 +210,14 @@ def load_model() -> bool:
         else:
             print("Model scores not found, will use equal weighting.")
             model_scores = None
+        
+        # Try to load silhouette scores if they exist
+        if os.path.exists(SILHOUETTE_SCORES_PATH):
+            silhouette_scores = joblib.load(SILHOUETTE_SCORES_PATH)
+            print(f"Silhouette scores loaded: {silhouette_scores}")
+        else:
+            print("Silhouette scores not found (training with older version).")
+            silhouette_scores = None
             
         print("Ensemble models loaded successfully.")
         return True
@@ -233,13 +243,20 @@ def model_info():
     if ensemble_models is None:
         return jsonify({'error': 'Models not loaded'}), 500
     
-    return jsonify({
+    info = {
         'num_models': len(ensemble_models),
         'num_features': len(data_columns),
         'feature_names': list(data_columns),
         'optimal_threshold': float(optimal_threshold),
         'model_type': 'K-Means Ensemble'
-    })
+    }
+    
+    # Add silhouette scores if available
+    if silhouette_scores is not None:
+        info['silhouette_scores'] = [float(score) for score in silhouette_scores]
+        info['avg_silhouette_score'] = float(np.mean(silhouette_scores))
+    
+    return jsonify(info)
 
 
 @app.route('/api/predict', methods=['POST'])
@@ -365,6 +382,11 @@ def predict():
                 'processing_time': float(time.time() - start_time),
                 'avg_confidence': float(np.mean(confidence_scores) * 100)
             }
+            
+            # Add silhouette scores if available
+            if silhouette_scores is not None:
+                metrics['silhouette_scores'] = [float(score) for score in silhouette_scores]
+                metrics['avg_silhouette_score'] = float(np.mean(silhouette_scores) * 100)
         else:
             metrics = {
                 'total_samples': int(len(df_test_original)),
@@ -373,6 +395,11 @@ def predict():
                 'processing_time': float(time.time() - start_time),
                 'avg_confidence': float(np.mean(confidence_scores) * 100)
             }
+            
+            # Add silhouette scores if available (even without labels)
+            if silhouette_scores is not None:
+                metrics['silhouette_scores'] = [float(score) for score in silhouette_scores]
+                metrics['avg_silhouette_score'] = float(np.mean(silhouette_scores) * 100)
         
         display_msg = f"Processed {len(df_test_original)} samples in {time.time() - start_time:.2f}s - {total_anomalies} anomalies detected (showing all)"
         print(display_msg)
