@@ -4,6 +4,8 @@
 
 Anomalyze is an optimized network anomaly detection system that uses ensemble K-means clustering to identify suspicious network traffic patterns and potential cyber threats with exceptional speed and accuracy.
 
+> 📚 **For developers and contributors:** See [DEVELOPMENT_DOCS.md](DEVELOPMENT_DOCS.md) for detailed technical documentation, model training, optimization details, and troubleshooting.
+
 ![Python](https://img.shields.io/badge/python-v3.14+-blue.svg)
 ![Flask](https://img.shields.io/badge/flask-v3.0+-green.svg)
 ![scikit-learn](https://img.shields.io/badge/scikit--learn-v1.4+-orange.svg)
