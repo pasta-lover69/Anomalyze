@@ -7,7 +7,6 @@ import os
 import pandas as pd
 import numpy as np
 import joblib
-from pathlib import Path
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import silhouette_score
@@ -232,19 +231,14 @@ def main():
     print(f"Started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
     
     try:
-        # Step 1: Combine data
         df_combined = combine_training_data()
         
-        # Step 2: Retrain models
         models, scaler, data_columns, model_scores = retrain_ensemble_models(df_combined)
         
-        # Step 3: Optimize threshold
         threshold = find_optimal_threshold(models, scaler, data_columns, df_combined)
         
-        # Step 4: Save models
         save_models(models, scaler, data_columns, threshold, model_scores)
         
-        # Step 5: Archive uploaded logs
         archive_uploaded_logs()
         
         print("\n" + "="*70)
