@@ -1,20 +1,108 @@
 """
-Anomalyze Preprocessing Module
+Anomalyze Preprocessing
 """
 
 from __future__ import annotations
 import pandas as pd
-from sklearn.preprocessing import LabelEncoder, StandardScaler, RobustScaler
+from sklearn.preprocessing import LabelEncoder
 import numpy as np
-import sys
 from pathlib import Path
-from typing import Union
+from typing import Union, Tuple
+
+class InvalidNetworkLogError(Exception):
+    """Custom exception for invalid network traffic logs"""
+    pass
+
+
+def validate_network_traffic_log(df: pd.DataFrame, expected_columns: int = 42) -> Tuple[bool, str]:
+    """
+    Validates if the uploaded file appears to be a network traffic log.
+    
+    Returns:
+        Tuple[bool, str]: (is_valid, error_message)
+    """
+    # Check 1: Column count (NSL-KDD can have 41, 42, or 43 columns)
+    # 41 = without label, 42 = with label, 43 = with label and difficulty
+    actual_columns = len(df.columns)
+    valid_column_counts = [41, 42, 43]
+    
+    if actual_columns not in valid_column_counts:
+        return False, (
+            f"Invalid file format: Expected 41-43 columns for NSL-KDD network traffic logs, "
+            f"but found {actual_columns} columns. "
+            f"Please upload a valid NSL-KDD format network traffic log file."
+        )
+    
+    # Check 2: Verify first few columns contain numeric data (common in network logs)
+    # NSL-KDD starts with: duration, protocol_type, service, flag, src_bytes, dst_bytes...
+    if len(df) > 0:
+        # Check if first column (duration) is mostly numeric
+        first_col = df.iloc[:, 0]
+        try:
+            numeric_vals = pd.to_numeric(first_col, errors='coerce')
+            numeric_ratio = numeric_vals.notna().sum() / len(first_col)
+            
+            if numeric_ratio < 0.5:  # Less than 50% numeric
+                return False, (
+                    "Invalid file format: The file doesn't appear to contain network traffic data. "
+                    "Expected numeric values in duration column. "
+                    "Please upload a valid NSL-KDD format network traffic log file."
+                )
+        except Exception:
+            return False, (
+                "Invalid file format: Unable to parse network traffic data. "
+                "Please ensure the file is in NSL-KDD format (CSV with no headers)."
+            )
+        
+        # Check 3: Validate protocol_type column (should have typical network protocols)
+        protocol_col = df.iloc[:, 1]
+        unique_protocols = protocol_col.unique()
+        
+        # Common NSL-KDD protocols: tcp, udp, icmp
+        valid_protocols = {'tcp', 'udp', 'icmp'}
+        found_valid_protocol = any(
+            str(proto).lower() in valid_protocols 
+            for proto in unique_protocols[:10]  # Check first 10 unique values
+        )
+        
+        if not found_valid_protocol and len(unique_protocols) < 20:
+            # If we don't find common protocols and there's low variety, it's suspicious
+            return False, (
+                "Invalid file format: Protocol types don't match expected network traffic patterns. "
+                "Expected protocols like 'tcp', 'udp', or 'icmp'. "
+                "Please upload a valid NSL-KDD format network traffic log file."
+            )
+        
+        # Check 4: Verify byte columns (4th and 5th columns) are numeric
+        if len(df.columns) >= 6:
+            src_bytes = pd.to_numeric(df.iloc[:, 4], errors='coerce')
+            dst_bytes = pd.to_numeric(df.iloc[:, 5], errors='coerce')
+            
+            src_valid = src_bytes.notna().sum() / len(df) > 0.7
+            dst_valid = dst_bytes.notna().sum() / len(df) > 0.7
+            
+            if not (src_valid and dst_valid):
+                return False, (
+                    "Invalid file format: Source and destination byte columns contain invalid data. "
+                    "Please upload a valid NSL-KDD format network traffic log file."
+                )
+    
+    # Check 5: Minimum rows check
+    if len(df) < 1:
+        return False, (
+            "Invalid file: The file is empty or contains no data rows. "
+            "Please upload a file with network traffic data."
+        )
+    
+    return True, ""
+
 
 def load_and_preprocess_data(file_path: Union[str, Path]) -> pd.DataFrame:
     """
     Loads the NSL-KDD dataset, assigns column names, and handles categorical features.
+    Validates that the input is a proper network traffic log.
     """
-    #Column names for the NSL-KDD dataset
+
     columns = [
         'duration', 'protocol_type', 'service', 'flag', 'src_bytes', 'dst_bytes',
         'land', 'wrong_fragment', 'urgent', 'hot', 'num_failed_logins',
@@ -32,10 +120,20 @@ def load_and_preprocess_data(file_path: Union[str, Path]) -> pd.DataFrame:
     ]
 
     try:
+        # Load the CSV file without assigning column names first (for validation)
         if hasattr(file_path, 'read'):
-            df = pd.read_csv(file_path, header = None, names = columns)
+            df_raw = pd.read_csv(file_path, header=None)
         else:
-            df = pd.read_csv(file_path, header = None, names = columns)
+            df_raw = pd.read_csv(file_path, header=None)
+        
+        # Validate that this is a network traffic log
+        is_valid, error_message = validate_network_traffic_log(df_raw, expected_columns=len(columns))
+        if not is_valid:
+            raise InvalidNetworkLogError(error_message)
+        
+        # Assign column names after validation
+        df = df_raw.copy()
+        df.columns = columns[:len(df.columns)]  # Assign only as many names as we have columns
         
         if 'difficulty' in df.columns:
             df = df.drop('difficulty', axis = 1)
@@ -48,8 +146,14 @@ def load_and_preprocess_data(file_path: Union[str, Path]) -> pd.DataFrame:
 
         for col in categorical_columns:
             if col in df.columns:
-                le = LabelEncoder()
-                df[col] = le.fit_transform(df[col].astype(str))
+                try:
+                    le = LabelEncoder()
+                    df[col] = le.fit_transform(df[col].astype(str))
+                except Exception as e:
+                    raise InvalidNetworkLogError(
+                        f"Failed to encode categorical column '{col}'. "
+                        f"This may not be a valid network traffic log. Error: {str(e)}"
+                    )
 
         # Focus on the most important features for anomaly tdetection
         important_features = [
@@ -60,7 +164,7 @@ def load_and_preprocess_data(file_path: Union[str, Path]) -> pd.DataFrame:
             'dst_host_same_srv_rate', 'dst_host_serror_rate'
         ]
 
-        # Keep only the important features (label it if it's existed)
+        # Keep only the important features
         features_to_keep = important_features.copy()
         if 'label' in df.columns:
             features_to_keep.append('label')
@@ -69,7 +173,7 @@ def load_and_preprocess_data(file_path: Union[str, Path]) -> pd.DataFrame:
         features_to_keep = [f for f in features_to_keep if f in df.columns]
         df =df[features_to_keep]
 
-        # Ensure all remaining columns are numeric (Except for the label)
+        # Ensure all remaining columns are numeric
         for col in df.columns:
             if col != 'label':
                 # Force conversion to numeric, replacing any non-numeric values with 0
@@ -80,12 +184,30 @@ def load_and_preprocess_data(file_path: Union[str, Path]) -> pd.DataFrame:
 
                 # Apply log transformation to highly skewed features
                 if col in ['src_bytes', 'dst_bytes', 'count', 'srv_count']:
-                    df[col] = np.log1p(df[col])  # log1p handles zeros better
+                    df[col] = np.log1p(df[col])
 
         return df
-    except Exception as e:
-        print(f"Error in processing: {e}")
+    
+    except InvalidNetworkLogError:
+        # Re-raise our custom validation errors
         raise
+    except pd.errors.EmptyDataError:
+        raise InvalidNetworkLogError(
+            "The uploaded file is empty. Please upload a valid network traffic log file."
+        )
+    except pd.errors.ParserError as e:
+        raise InvalidNetworkLogError(
+            f"Failed to parse the file. Please ensure it's a valid CSV file in NSL-KDD format. Error: {str(e)}"
+        )
+    except Exception as e:
+        # Check if it's a file reading error
+        if "No such file" in str(e) or "cannot find" in str(e).lower():
+            raise
+        # Otherwise, treat as invalid format
+        raise InvalidNetworkLogError(
+            f"Unable to process the file as a network traffic log. "
+            f"Please ensure you're uploading a valid NSL-KDD format file. Error: {str(e)}"
+        )
 
 def create_advanced_network_features(df: pd.DataFrame) -> pd.DataFrame:
     """Create advance network-specific features optimized for K-means clustering"""
@@ -115,12 +237,12 @@ def create_advanced_network_features(df: pd.DataFrame) -> pd.DataFrame:
                                                   bins = [0, 1,10, 100, float('inf')],
                                                   labels = [0, 1, 2, 3])
         
-    # Host behavior clustering features (check if columns exist)
+    # Host behavior clustering features
     if 'dst_host_diff_srv_rate' in df_enhanced.columns and 'dst_host_srv_count' in df_enhanced.columns:
         df_enhanced['host_diversity'] = (df_enhanced['dst_host_diff_srv_rate'] *
                                        df_enhanced['dst_host_srv_count'])
     
-    # Attack pattern indicator (check if columns exist)
+    # Attack pattern indicator
     if 'su_attempted' in df_enhanced.columns and 'root_shell' in df_enhanced.columns:
         df_enhanced['sus_flag_ratio'] = (df_enhanced['su_attempted'] + df_enhanced['root_shell']) / 2
     
@@ -154,8 +276,6 @@ def enhanced_preprocessing_for_kmeans(df: pd.DataFrame) -> pd.DataFrame:
                 freq_encoding = df[col].value_counts().to_dict()
                 df[f'{col}_freq'] = df[col].map(freq_encoding)
                 df = df.drop(col, axis=1)
-
-        # Note: Don't apply scaling here as it will be done later with the saved scaler
         
         return df
         

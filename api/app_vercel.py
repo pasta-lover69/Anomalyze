@@ -44,7 +44,28 @@ def upload_file():
         files = {'file': (file.filename, file.stream, file.content_type)}
         response = requests.post(f'{API_URL}/api/predict', files=files, timeout=300)
         
-        if response.status_code != 200:
+        # Handle different response status codes
+        if response.status_code == 400:
+            # Validation error (bad request)
+            try:
+                error_data = response.json()
+                error_msg = error_data.get('error', 'Invalid file format')
+                error_type = error_data.get('error_type', 'unknown')
+                
+                return render_template('index.html', 
+                                     error=error_msg,
+                                     error_type='validation',
+                                     results=None, 
+                                     accuracy=None)
+            except:
+                return render_template('index.html', 
+                                     error='Invalid file format. Please upload a valid NSL-KDD network traffic log.',
+                                     error_type='validation',
+                                     results=None, 
+                                     accuracy=None)
+        
+        elif response.status_code != 200:
+            # Other API errors (500, etc.)
             try:
                 error_data = response.json()
                 error_msg = error_data.get('error', response.text)
@@ -56,6 +77,7 @@ def upload_file():
             return render_template('index.html', 
                                  error=f"API Error: {error_msg}",
                                  error_details=details,
+                                 error_type='server',
                                  results=None, 
                                  accuracy=None)
         
@@ -63,10 +85,13 @@ def upload_file():
         
         if not result.get('success'):
             error_msg = result.get('error', 'Unknown error')
+            error_type = result.get('error_type', 'unknown')
             details = result.get('details', '')
+            
             return render_template('index.html', 
-                                 error=f"Analysis Error: {error_msg}",
+                                 error=error_msg,
                                  error_details=details,
+                                 error_type=error_type,
                                  results=None, 
                                  accuracy=None)
         
@@ -81,17 +106,20 @@ def upload_file():
         
     except requests.exceptions.Timeout:
         return render_template('index.html', 
-                             error='API request timed out',
+                             error='API request timed out. The file may be too large or the server is busy.',
+                             error_type='timeout',
                              results=None, 
                              accuracy=None)
     except requests.exceptions.RequestException as e:
         return render_template('index.html', 
                              error=f'API connection error: {str(e)}',
+                             error_type='connection',
                              results=None, 
                              accuracy=None)
     except Exception as e:
         return render_template('index.html', 
                              error=f'Error processing file: {str(e)}',
+                             error_type='unknown',
                              results=None, 
                              accuracy=None)
 
