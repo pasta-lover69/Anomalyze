@@ -10,31 +10,27 @@ import numpy as np
 import os
 import joblib
 import io
-from pathlib import Path
-from utils.preprocessing import load_and_preprocess_data
+from utils.preprocessing import load_and_preprocess_data, InvalidNetworkLogError
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 import time
 
 app = Flask(__name__)
-CORS(app)  # Enable CORS for Vercel frontend
+CORS(app)
 
-# Configure models folder
 MODELS_FOLDER = 'models'
 UPLOADED_LOGS_FOLDER = 'data/uploaded_logs'
 
-# Create folders if they don't exist
 os.makedirs(MODELS_FOLDER, exist_ok=True)
 os.makedirs(UPLOADED_LOGS_FOLDER, exist_ok=True)
 
-# Global variables
 ensemble_models = None
 scaler = None
 data_columns = None
 optimal_threshold = None
 model_scores = None
 silhouette_scores = None
-upload_counter = 0  # Track number of uploads since last retrain
-RETRAIN_THRESHOLD = 10  # Retrain after N uploads
+upload_counter =  0
+RETRAIN_THRESHOLD = 10
 
 # Paths for saved model files
 MODEL_PATH = os.path.join(MODELS_FOLDER, 'ensemble_models.joblib')
@@ -47,7 +43,7 @@ UPLOAD_COUNTER_PATH = os.path.join(MODELS_FOLDER, 'upload_counter.txt')
 
 
 def ensemble_predict(models: list, data: np.ndarray, threshold: float) -> np.ndarray:
-    """Use ensemble of models for predictions with majority voting - OPTIMIZED."""
+    """Use ensemble of models for predictions with majority voting"""
     predictions = []
     threshold = float(threshold)
     
@@ -89,16 +85,14 @@ def calculate_anomaly_severity(distances: np.ndarray, threshold: float) -> list[
 def save_uploaded_file(file_content: str, filename: str) -> tuple[str, bool]:
     """
     Save uploaded file to the uploaded_logs folder for future training.
-    Returns tuple of (file_path, is_duplicate)
+    Returns tuple of file path that is duplicate
     """
     from datetime import datetime
     import hashlib
     import glob
     
-    # Calculate hash of uploaded file
     file_hash = hashlib.sha256(file_content.encode()).hexdigest()
     
-    # Check if this file already exists (compare hashes)
     existing_files = glob.glob(os.path.join(UPLOADED_LOGS_FOLDER, '*.txt'))
     
     for existing_file in existing_files:
@@ -115,7 +109,7 @@ def save_uploaded_file(file_content: str, filename: str) -> tuple[str, bool]:
             # Skip files that can't be read
             continue
     
-    # Not a duplicate - save the file
+    # Save the not duplicated file
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
     safe_filename = f"{timestamp}_{filename}"
     file_path = os.path.join(UPLOADED_LOGS_FOLDER, safe_filename)
@@ -280,9 +274,7 @@ def predict():
         stream = io.StringIO(file_content, newline=None)
         stream.seek(0)
         df_test_original = pd.read_csv(stream, header=None)
-        
-        # ASYNC: Save uploaded file in background (non-blocking)
-        # This doesn't delay the response
+
         import threading
         def save_async():
             try:
@@ -292,7 +284,7 @@ def predict():
                     if should_retrain():
                         trigger_retraining()
             except:
-                pass  # Don't let background task crash main request
+                pass  # This doesn't let the background task crash main request
         
         threading.Thread(target=save_async, daemon=True).start()
         
@@ -315,9 +307,7 @@ def predict():
             df_test[col] = pd.to_numeric(df_test[col], errors='coerce').fillna(0).astype(float)
         
         df_test_scaled = scaler.transform(df_test)
-        
-        # OPTIMIZED: Calculate distances once and reuse
-        # Instead of calculating twice (once for prediction, once for confidence)
+    
         distances_list = []
         for model in ensemble_models:
             distances = model.transform(df_test_scaled).min(axis=1)
@@ -334,7 +324,7 @@ def predict():
         # Calculate severity levels
         severity_levels = calculate_anomaly_severity(distances, optimal_threshold)
         
-        # Build results - OPTIMIZED: Only process anomalies
+        # Build results
         anomalies_indices = np.where(anomalies_mask)[0]
         
         # No limit - showing all anomalies
@@ -395,7 +385,7 @@ def predict():
                 'avg_confidence': float(np.mean(confidence_scores) * 100)
             }
             
-            # Add silhouette scores if available (even without labels)
+            # Add silhouette scores if available
             if silhouette_scores is not None:
                 metrics['silhouette_scores'] = [float(score) for score in silhouette_scores]
                 metrics['avg_silhouette_score'] = float(np.mean(silhouette_scores) * 100)
@@ -409,11 +399,26 @@ def predict():
             'metrics': metrics,
             'has_labels': has_labels
         })
-        
-    except Exception as e:
+    
+    except InvalidNetworkLogError as e:
+        # Handle validation errors with clear user-friendly messages
         return jsonify({
             'success': False,
-            'error': str(e)
+            'error': str(e),
+            'error_type': 'validation_error'
+        }), 400
+        
+    except Exception as e:
+        # Handle unexpected errors
+        error_msg = str(e)
+        # Provide more context for common errors
+        if 'columns' in error_msg.lower():
+            error_msg = f"Data format error: {error_msg}. Please ensure you're uploading a valid NSL-KDD network traffic log."
+        
+        return jsonify({
+            'success': False,
+            'error': error_msg,
+            'error_type': 'processing_error'
         }), 500
 
 
@@ -480,11 +485,26 @@ def predict_json():
             'results': results,
             'metrics': metrics
         })
-        
-    except Exception as e:
+    
+    except InvalidNetworkLogError as e:
+        # Handle validation errors with clear user-friendly messages
         return jsonify({
             'success': False,
-            'error': str(e)
+            'error': str(e),
+            'error_type': 'validation_error'
+        }), 400
+        
+    except Exception as e:
+        # Handle unexpected errors
+        error_msg = str(e)
+        # Provide more context for common errors
+        if 'columns' in error_msg.lower():
+            error_msg = f"Data format error: {error_msg}. Please ensure you're uploading a valid NSL-KDD network traffic log."
+        
+        return jsonify({
+            'success': False,
+            'error': error_msg,
+            'error_type': 'processing_error'
         }), 500
 
 
