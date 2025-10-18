@@ -1,5 +1,4 @@
 # Anomalyze Vercel Frontend Requirements
-# Python 3.12 Compatible
 
 # Web Framework
 Flask==3.0.3
