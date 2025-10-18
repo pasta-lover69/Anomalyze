@@ -221,14 +221,88 @@
               </svg>
             </div>
             <div class="card-content">
-              <span class="card-title">Model Accuracy</span>
+              <span class="card-title">Accuracy</span>
               <span class="card-value" data-target="{{ accuracy }}">0.00%</span>
             </div>
           </div>
 
-          {% set anomalies_count = results|length %} {% set anomalies_color =
-          'green' if anomalies_count <= 100 else ('yellow' if anomalies_count <=
-          1000 else 'red') %}
+          {% if metrics and metrics.get('precision') is not none %} {% set
+          precision = metrics.get('precision') %} {% set precision_color =
+          'green' if precision >= 85 else ('yellow' if precision >= 70 else
+          'red') %}
+          <div class="summary-card {{ precision_color }}">
+            <div class="card-icon">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+                <path d="M2 17l10 5 10-5"></path>
+                <path d="M2 12l10 5 10-5"></path>
+              </svg>
+            </div>
+            <div class="card-content">
+              <span class="card-title">Precision</span>
+              <span class="card-value" data-target="{{ precision }}"
+                >0.00%</span
+              >
+            </div>
+          </div>
+          {% endif %} {% if metrics and metrics.get('recall') is not none %} {%
+          set recall = metrics.get('recall') %} {% set recall_color = 'green' if
+          recall >= 85 else ('yellow' if recall >= 70 else 'red') %}
+          <div class="summary-card {{ recall_color }}">
+            <div class="card-icon">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="M12 6v6l4 2"></path>
+              </svg>
+            </div>
+            <div class="card-content">
+              <span class="card-title">Recall</span>
+              <span class="card-value" data-target="{{ recall }}">0.00%</span>
+            </div>
+          </div>
+          {% endif %} {% if metrics and metrics.get('f1_score') is not none %}
+          {% set f1_score = metrics.get('f1_score') %} {% set f1_color = 'green'
+          if f1_score >= 85 else ('yellow' if f1_score >= 70 else 'red') %}
+          <div class="summary-card {{ f1_color }}">
+            <div class="card-icon">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <polygon
+                  points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
+                ></polygon>
+              </svg>
+            </div>
+            <div class="card-content">
+              <span class="card-title">F1-Score</span>
+              <span class="card-value" data-target="{{ f1_score }}">0.00%</span>
+            </div>
+          </div>
+          {% endif %} {% set anomalies_count = results|length %} {% set
+          anomalies_color = 'green' if anomalies_count <= 100 else ('yellow' if
+          anomalies_count <= 1000 else 'red') %}
           <div class="summary-card {{ anomalies_color }}">
             <div class="card-icon">
               <svg
@@ -248,7 +322,21 @@
           </div>
         </div>
 
-        {% if results is not none and not results.empty %}
+        <!-- Performance Metrics Chart -->
+        {% if metrics and metrics.get('precision') is not none %}
+        <div class="data-card mt-4">
+          <h2 class="card-header-title">📊 Model Performance Metrics</h2>
+          <p
+            class="card-header-subtitle"
+            style="margin-bottom: 1rem; color: #a1a1b5"
+          >
+            Comprehensive evaluation of detection accuracy and reliability
+          </p>
+          <div class="chart-container" style="height: 350px">
+            <canvas id="metricsChart"></canvas>
+          </div>
+        </div>
+        {% endif %} {% if results is not none and not results.empty %}
         <div class="data-visualization-grid mt-4">
           <div class="data-card">
             <h2 class="card-header-title">Protocol Distribution</h2>
@@ -916,6 +1004,83 @@
                   });
               }, 100); // Slight delay to prioritize first chart
           });
+
+          // Performance Metrics Chart (Bar Chart)
+          {% if metrics and metrics.get('precision') is not none %}
+          requestAnimationFrame(() => {
+              setTimeout(() => {
+                  const metricsChartCtx = document.getElementById('metricsChart').getContext('2d');
+                  new Chart(metricsChartCtx, {
+                      type: 'bar',
+                      data: {
+                          labels: ['Accuracy', 'Precision', 'Recall', 'F1-Score'],
+                          datasets: [{
+                              label: 'Performance (%)',
+                              data: [
+                                  {{ metrics.get('accuracy', 0) }},
+                                  {{ metrics.get('precision', 0) }},
+                                  {{ metrics.get('recall', 0) }},
+                                  {{ metrics.get('f1_score', 0) }}
+                              ],
+                              backgroundColor: [
+                                  'rgba(76, 250, 239, 0.7)',
+                                  'rgba(42, 245, 152, 0.7)',
+                                  'rgba(255, 179, 66, 0.7)',
+                                  'rgba(249, 90, 155, 0.7)'
+                              ],
+                              borderColor: [
+                                  'rgba(76, 250, 239, 1)',
+                                  'rgba(42, 245, 152, 1)',
+                                  'rgba(255, 179, 66, 1)',
+                                  'rgba(249, 90, 155, 1)'
+                              ],
+                              borderWidth: 2,
+                              borderRadius: 8
+                          }]
+                      },
+                      options: {
+                          maintainAspectRatio: false,
+                          animation: { duration: 800 },
+                          scales: {
+                              y: {
+                                  beginAtZero: true,
+                                  max: 100,
+                                  ticks: {
+                                      color: '#c1c1d1',
+                                      callback: function(value) {
+                                          return value + '%';
+                                      }
+                                  },
+                                  grid: { color: 'rgba(63, 60, 122, 0.3)' }
+                              },
+                              x: {
+                                  ticks: { color: '#c1c1d1', font: { size: 14, weight: 'bold' } },
+                                  grid: { display: false }
+                              }
+                          },
+                          plugins: {
+                              legend: { display: false },
+                              tooltip: {
+                                  backgroundColor: 'rgba(24, 21, 60, 0.95)',
+                                  titleColor: '#4cfaef',
+                                  bodyColor: '#ffffff',
+                                  borderColor: '#4cfaef',
+                                  borderWidth: 1,
+                                  padding: 12,
+                                  bodyFont: { size: 14 },
+                                  titleFont: { size: 16, weight: 'bold' },
+                                  callbacks: {
+                                      label: function(context) {
+                                          return 'Score: ' + context.parsed.y.toFixed(2) + '%';
+                                      }
+                                  }
+                              }
+                          }
+                      }
+                  });
+              }, 200); // Render after other charts
+          });
+          {% endif %}
           {% endif %}
       });
     </script>

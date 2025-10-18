@@ -209,9 +209,9 @@ body {
 
 .results-summary {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 1.5rem;
-    max-width: 1200px;
+    max-width: 1400px;
     margin: 0 auto;
     justify-items: center;
 }
@@ -241,7 +241,7 @@ body {
     border-radius: 12px;
     transition: all 0.3s ease;
     width: 100%;
-    max-width: 350px;
+    max-width: 300px;
 }
 
 .summary-card:hover {
