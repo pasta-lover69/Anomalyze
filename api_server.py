@@ -43,7 +43,8 @@ UPLOAD_COUNTER_PATH = os.path.join(MODELS_FOLDER, 'upload_counter.txt')
 
 
 def ensemble_predict(models: list, data: np.ndarray, threshold: float) -> np.ndarray:
-    """Use ensemble of models for predictions with majority voting"""
+    """High Precision voting (4+ out of 5 models must agree)
+    """
     predictions = []
     threshold = float(threshold)
     
@@ -51,10 +52,9 @@ def ensemble_predict(models: list, data: np.ndarray, threshold: float) -> np.nda
         distances = model.transform(data).min(axis=1)
         pred = (distances > threshold).astype(int)
         predictions.append(pred)
-    
-    # Use majority voting
+
     ensemble_pred = np.array(predictions).mean(axis=0)
-    return (ensemble_pred > 0.5).astype(int)
+    return (ensemble_pred > 0.7).astype(int)
 
 
 def calculate_anomaly_severity(distances: np.ndarray, threshold: float) -> list[str]:
@@ -315,9 +315,8 @@ def predict():
         
         distances = np.mean(distances_list, axis=0)
         
-        # Use distances for anomaly detection
-        threshold = float(optimal_threshold)
-        anomalies_mask = (distances > threshold).astype(int)
+        # Use ensemble voting for anomaly detection
+        anomalies_mask = ensemble_predict(ensemble_models, df_test_scaled, optimal_threshold)
         
         confidence_scores = 1 / (1 + distances)
         
@@ -327,12 +326,15 @@ def predict():
         # Build results
         anomalies_indices = np.where(anomalies_mask)[0]
         
-        # No limit - showing all anomalies
+        # PERFORMANCE FIX: Limit displayed anomalies to prevent slow page loads
+        # Show first 1000 anomalies for fast rendering
         total_anomalies = len(anomalies_indices)
+        MAX_DISPLAY = 1000
+        display_indices = anomalies_indices[:MAX_DISPLAY]
         
         anomalies_data = []
         
-        for idx in anomalies_indices:
+        for idx in display_indices:
             # Get the record and convert all values to JSON-serializable types
             anomaly_record = {}
             row_data = df_test_original.iloc[idx]
@@ -369,7 +371,9 @@ def predict():
                 'anomalies_detected': int(total_anomalies),  # Total anomalies found
                 'anomalies_displayed': int(len(anomalies_data)),  # Shown in UI
                 'processing_time': float(time.time() - start_time),
-                'avg_confidence': float(np.mean(confidence_scores) * 100)
+                'avg_confidence': float(np.mean(confidence_scores) * 100),
+                'display_limit': MAX_DISPLAY,
+                'showing_all': total_anomalies <= MAX_DISPLAY
             }
             
             # Add silhouette scores if available
@@ -382,7 +386,9 @@ def predict():
                 'anomalies_detected': int(total_anomalies),  # Total anomalies found
                 'anomalies_displayed': int(len(anomalies_data)),  # Shown in UI
                 'processing_time': float(time.time() - start_time),
-                'avg_confidence': float(np.mean(confidence_scores) * 100)
+                'avg_confidence': float(np.mean(confidence_scores) * 100),
+                'display_limit': MAX_DISPLAY,
+                'showing_all': total_anomalies <= MAX_DISPLAY
             }
             
             # Add silhouette scores if available
@@ -390,7 +396,11 @@ def predict():
                 metrics['silhouette_scores'] = [float(score) for score in silhouette_scores]
                 metrics['avg_silhouette_score'] = float(np.mean(silhouette_scores) * 100)
         
-        display_msg = f"Processed {len(df_test_original)} samples in {time.time() - start_time:.2f}s - {total_anomalies} anomalies detected (showing all)"
+        display_msg = f"Processed {len(df_test_original)} samples in {time.time() - start_time:.2f}s - {total_anomalies} anomalies detected"
+        if total_anomalies > MAX_DISPLAY:
+            display_msg += f" (showing first {MAX_DISPLAY} for performance)"
+        else:
+            display_msg += " (showing all)"
         print(display_msg)
         
         return jsonify({
