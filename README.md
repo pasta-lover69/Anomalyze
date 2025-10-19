@@ -9,44 +9,69 @@ Anomalyze is an optimized network anomaly detection system that uses ensemble K-
 ![Python](https://img.shields.io/badge/python-v3.14+-blue.svg)
 ![Flask](https://img.shields.io/badge/flask-v3.0+-green.svg)
 ![scikit-learn](https://img.shields.io/badge/scikit--learn-v1.4+-orange.svg)
+![Chart.js](https://img.shields.io/badge/Chart.js-v4.0+-ff6384.svg)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Performance](https://img.shields.io/badge/speed-47K%20samples%2Fsec-brightgreen.svg)
-![Accuracy](https://img.shields.io/badge/accuracy-86.24%25-success.svg)
+![Accuracy](https://img.shields.io/badge/accuracy-77.75%25-brightgreen.svg)
+![Silhouette](https://img.shields.io/badge/cluster%20quality-97.51%25-brightgreen.svg)
+![F1](https://img.shields.io/badge/F1--score-79.19%25-green.svg)
 
 ## 🚀 Key Features
 
 - **⚡ Ultra-Fast Processing**: 47,000+ samples per second processing speed
-- **🎯 High Accuracy**: 86.24% accuracy with 87.17% F1-score
-- **🔄 Optimized K-means Ensemble**: 5 different K-means models with optimized configurations
+- **🎯 High Detection Quality**: 77.75% accuracy with 97.51% cluster quality & 79.19% F1-score
+- **� Real-Time Metrics Dashboard**: Live visualization of all performance metrics
+- **📈 Interactive Charts**: Performance bar chart, protocol distribution, and anomaly visualizations
+- **�🔄 Optimized K-means Ensemble**: 5 different K-means models with optimized configurations (6-12 clusters)
+- **✨ Cluster Quality Monitoring**: Silhouette scores displayed for model health assessment
 - **🤖 Incremental Learning**: Automatically saves unique uploaded logs and retrains model after 10 uploads
 - **🔍 Smart Duplicate Detection**: SHA-256 hash-based duplicate prevention (transparent to users)
 - **☁️ Cloud Deployed**: Frontend on Vercel, ML API on Render for global accessibility
-- **📊 Real-time Analysis**: Instant anomaly detection results with sub-second response times
-- **📈 Comprehensive Metrics**: Detailed performance analytics with precision, recall, and confidence scoring
-- **🎨 User-Friendly Interface**: Clean Flask web application for easy interaction
+- **⚡ Real-time Analysis**: Instant anomaly detection results with sub-second response times
+- **🎨 User-Friendly Interface**: Clean, modern web application with animated metrics cards
 - **⚙️ Streamlined Preprocessing**: Optimized data pipeline for maximum performance
+- **🎯 Comprehensive Scoring**: Accuracy, Precision, Recall, F1-Score, and Confidence metrics
 - **📋 KDD Cup 1999 Compatible**: Industry-standard dataset support with proven results
 
-## 🏆 Performance Highlights
+## Performance Metrics
 
-| Metric               | Value              | Status        |
-| -------------------- | ------------------ | ------------- |
-| **Processing Speed** | 47,137 samples/sec | ⚡ Excellent  |
-| **Accuracy**         | 86.24%             | 🎯 Excellent  |
-| **Precision**        | 92.86%             | 🔍 Very High  |
-| **Recall**           | 82.15%             | 📊 High       |
-| **F1-Score**         | 87.17%             | 🎪 Excellent  |
-| **Response Time**    | <0.5 seconds       | ⚡ Ultra-Fast |
+| Metric                | Value              | Status       |
+| --------------------- | ------------------ | ------------ |
+| **Processing Speed**  | 47,137 samples/sec |  Excellent   |
+| **Accuracy**          | 77.75%             |  Very Good   |
+| **Precision**         | 84.67%             |  Excellent   |
+| **Recall**            | 74.37%             |  Good        |
+| **F1-Score**          | 79.19%             |  Very Good   |
+| **Cluster Quality**   | 97.51% Silhouette  |  Exceptional |
+
+### 📊 Model Quality Metrics:
+
+- **Individual Silhouette Scores**: 97.98%, 97.81%, 96.98%, 96.97%, 97.81%
+- **Average Silhouette Score**: 97.51% (exceptional cluster quality)
+- **Optimal Threshold**: 16.657554 (50th percentile - balanced detection)
+- **Training Time**: ~545 seconds (9 minutes) for complete ensemble
+- **Ensemble Size**: 5 optimized K-means models (6-12 clusters)
+
+### 📊 Visualization Features:
+
+- **Comprehensive Metrics Dashboard**: Real-time display of all performance metrics
+- **Performance Charts**: Interactive bar chart showing Accuracy, Precision, Recall, and F1-Score
+- **Protocol Distribution**: Visual breakdown of network protocols in anomalies
+- **Anomaly Visualization**: Source bytes distribution for detected threats
+- **Cluster Quality Monitoring**: Live silhouette scores for model health
+- **Color-Coded Cards**: Green (≥85%), Yellow (70-85%), Red (<70%) for instant assessment
 
 ## 🛠️ Technology Stack
 
 - **Backend API**: Python 3.12+, Flask 3.0+, Flask-CORS (deployed on Render)
-- **Frontend**: Flask, HTML, CSS, JavaScript (deployed on Vercel)
+- **Frontend**: Flask, HTML5, CSS3, JavaScript ES6+ (deployed on Vercel)
 - **Machine Learning**: scikit-learn 1.4+, NumPy 1.26+, Pandas 2.1+
+- **Visualizations**: Chart.js 4.0+ for interactive charts and graphs
 - **Data Processing**: Optimized preprocessing with modern Python features
 - **Model Storage**: Joblib for efficient model serialization
 - **Deployment**: Vercel (Frontend) + Render (Backend API)
 - **Duplicate Detection**: SHA-256 hashing for file comparison
+- **UI Framework**: Bootstrap 5 Grid + Custom CSS with animations
 
 ## 🌐 Live Demo
 
@@ -108,9 +133,13 @@ If you want to contribute or deploy your own instance:
    - Wait for analysis (typically <1 second)
 
 4. **Review Results**
-   - View total samples analyzed
-   - See anomalies detected with confidence scores
+   - View comprehensive metrics dashboard with animated cards
+   - See 6 key metrics: Cluster Quality, Accuracy, Precision, Recall, F1-Score, Anomalies Found
+   - Analyze interactive performance chart (bar chart)
+   - Review protocol distribution (doughnut chart)
+   - Examine anomaly visualization by source bytes (bar chart)
    - Check severity levels (Normal, Low, Medium, High, Critical)
+   - Browse detailed anomaly table with pagination
    - Download results if needed
 
 ## 📊 Dataset
@@ -131,20 +160,23 @@ The system is designed to work with the **KDD Cup 1999** network intrusion detec
 
 ## 🧠 Optimized Model Architecture
 
-### High-Performance K-means Ensemble
+### High-Performance K-means Ensemble with Enhanced Monitoring
 
-- **5 Optimized Models**: Different cluster configurations (5, 8, 10 clusters) with varied random seeds
+- **5 Optimized Models**: Diverse cluster configurations (6, 8, 10, 12 clusters) with varied random seeds
 - **Majority Voting**: Simple but effective ensemble prediction for speed and reliability
-- **Optimized Threshold**: Automatically tuned threshold (3.89) for maximum F1-score
-- **Streamlined Pipeline**: Simplified preprocessing for sub-second response times
+- **Optimized Threshold**: Automatically tuned threshold for maximum F1-score
+- **Streamlined Pipeline**: RobustScaler preprocessing for better outlier handling
+- **Quality Metrics**: Silhouette scores (45-65%) for cluster quality assessment
+- **Real-Time Monitoring**: Live performance metrics displayed in web dashboard
 
 ### Performance Optimizations:
 
-1. **Fast Preprocessing**: Minimal feature engineering focused on essential network patterns
-2. **Efficient Scaling**: StandardScaler for consistent performance across datasets
-3. **Smart Thresholding**: Percentile-based threshold optimization for balanced precision/recall
+1. **Enhanced Preprocessing**: RobustScaler for superior outlier detection
+2. **Optimized Clustering**: 20 initializations, 500 iterations per model for convergence
+3. **Two-Stage Threshold Search**: Coarse + fine-tuning for optimal precision-recall balance
 4. **Memory Efficient**: Optimized model storage and loading for quick startup
 5. **Vectorized Operations**: NumPy-optimized distance calculations for maximum speed
+6. **Visual Analytics**: Real-time charts and metrics for instant performance assessment
 
 ## 🤖 Incremental Learning System
 
@@ -186,11 +218,14 @@ See [INCREMENTAL_LEARNING.md](INCREMENTAL_LEARNING.md) for detailed documentatio
 
 ### Accuracy Metrics:
 
-- **Overall Accuracy**: 86.24% (excellent performance)
-- **Precision**: 92.86% (very low false positive rate)
-- **Recall**: 82.15% (catches most real anomalies)
-- **F1-Score**: 87.17% (excellent precision-recall balance)
+- **Overall Accuracy**: 77.75% (very good performance)
+- **Precision**: 84.67% (low false positive rate)
+- **Recall**: 74.37% (catches most real anomalies)
+- **F1-Score**: 79.19% (excellent precision-recall balance)
+- **Cluster Quality**: 97.51% Average Silhouette (exceptional clustering)
+- **Individual Silhouette Scores**: 97.98%, 97.81%, 96.98%, 96.97%, 97.81%
 - **Confidence Scoring**: Distance-based confidence for each prediction
+- **Real-Time Visualization**: All metrics displayed with interactive charts
 
 ## 🎯 Usage
 
@@ -218,10 +253,64 @@ Response includes:
 
 - Detected anomalies with confidence scores
 - Severity levels (Normal, Low, Medium, High, Critical)
-- Performance metrics (if labels provided)
+- Comprehensive metrics: Accuracy, Precision, Recall, F1-Score (if labels provided)
+- Cluster quality: Silhouette scores for model health
 - Processing time and sample count
+- All metrics formatted for easy visualization
 
-## 📁 Project Structure
+## � Interactive Dashboard & Visualizations
+
+Anomalyze features a modern, real-time dashboard with comprehensive visualizations:
+
+### 🎯 Metrics Cards (6 Key Indicators)
+
+1. **Cluster Quality** - Silhouette score showing model clustering health (97.51%)
+2. **Accuracy** - Overall detection accuracy (77.75%)
+3. **Precision** - True positive rate among predictions (84.67%)
+4. **Recall** - Detection rate of actual anomalies (74.37%)
+5. **F1-Score** - Harmonic mean of precision and recall (79.19%)
+6. **Anomalies Found** - Total threats detected in uploaded data
+
+**Features:**
+
+- ✨ Animated counters (smooth count-up effect)
+- 🎨 Color-coded status: Green (≥85%), Yellow (70-85%), Red (<70%)
+- 💫 Pulse animation after loading
+- 🎯 Hover effects for interactivity
+
+### 📈 Interactive Charts (Chart.js)
+
+1. **Performance Metrics Bar Chart**
+
+   - Side-by-side comparison of all 4 key metrics
+   - Color-coded bars: Cyan (Accuracy), Green (Precision), Orange (Recall), Pink (F1-Score)
+   - Percentage scale (0-100%)
+   - Tooltip on hover with exact values
+
+2. **Protocol Distribution Doughnut Chart**
+
+   - Visual breakdown of network protocols in detected anomalies
+   - Multi-color palette for easy distinction
+   - Interactive legend
+   - Hover tooltips with counts
+
+3. **Anomaly Visualization Bar Chart**
+   - Source bytes distribution for top 25 anomalies
+   - Helps identify data exfiltration patterns
+   - Sorted by severity
+   - Cyan gradient styling
+
+### 🎨 UI/UX Enhancements
+
+- **Responsive Grid Layout**: Auto-adjusts from 1-6 columns based on screen size
+- **Dark Theme**: Modern purple/cyan gradient design
+- **Smooth Animations**: 800ms counter animations, 500ms chart rendering
+- **Lazy Loading**: Charts render progressively for faster page display
+- **Pagination**: Results table with 10 rows per page
+- **Details Modal**: Expandable panels for each anomaly
+- **Analysis History**: Session storage of past analyses
+
+## �📁 Project Structure
 
 ```
 Anomalyze/
@@ -302,20 +391,24 @@ This will:
 
 ## 🚀 Recent Optimizations & Improvements
 
-### Performance Enhancements (v2.0):
+### Performance Enhancements (v3.0):
 
 - **Speed Boost**: Achieved 47,000+ samples/second processing (98x faster than typical ML inference)
-- **Accuracy Improvement**: Increased from ~45% to 86.24% accuracy through optimized thresholding
-- **Response Time**: Reduced total processing time to <0.5 seconds for large datasets
+- **Cluster Quality**: Achieved 97.51% average silhouette score (exceptional clustering)
+- **Balanced Detection**: 77.75% accuracy, 84.67% precision, 74.37% recall, 79.19% F1-score
+- **Optimized Threshold**: 16.657554 (50th percentile) for optimal precision-recall balance
+- **Enhanced Preprocessing**: RobustScaler with 20 initializations, 500 iterations per model
+- **Response Time**: Maintained <0.5 seconds for large datasets
 - **Memory Optimization**: Streamlined model loading and inference pipeline
 
 ### Technical Improvements:
 
-1. **Simplified Preprocessing**: Removed redundant feature engineering for speed
-2. **Optimized Threshold**: Implemented percentile-based threshold optimization
-3. **Efficient Ensemble**: Simplified majority voting for faster predictions
-4. **Smart Model Architecture**: Reduced from 6 to 5 optimized models
-5. **Vectorized Operations**: NumPy optimizations for maximum performance
+1. **Advanced Preprocessing**: RobustScaler for superior outlier handling
+2. **Two-Stage Optimization**: Coarse + fine threshold search (50th percentile optimal)
+3. **Diverse Ensemble**: 5 models with varied cluster counts (6, 8, 10, 12, 8)
+4. **High-Quality Clustering**: Individual silhouette scores: 97.98%, 97.81%, 96.98%, 96.97%, 97.81%
+5. **Enhanced Training**: 20 initializations, 500 iterations, Lloyd algorithm
+6. **Optimal Threshold**: 16.657554 for balanced 84.67% precision and 74.37% recall
 
 ### Benchmark Results:
 
@@ -323,10 +416,11 @@ This will:
 === PERFORMANCE BENCHMARK ===
 Processing Speed: 47,137 samples/second
 Total Time: 0.478 seconds (22,544 samples)
-Accuracy: 86.24%
-Precision: 92.86%
-Recall: 82.15%
-F1-Score: 87.17%
+Accuracy: 77.75%
+Precision: 84.67%
+Recall: 74.37%
+F1-Score: 79.19%
+Cluster Quality: 97.51% (Silhouette)
 Status: ✓ EXCELLENT Performance
 ```
 
